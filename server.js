@@ -6,29 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* Test endpoint */
-app.get("/", (req, res) => {
-  res.json({ status: "Shikudama chatbot backend attivo" });
-});
-
-/* Chat endpoint */
-app.post("/chat", async (req, res) => {
-  try {
-    const userMessage = req.body.message;
-
-    if (!userMessage) {
-      return res.status(400).json({ error: "Messaggio mancante" });
-    }
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-      
+/* =========================
+   SYSTEM PROMPT – CALENDIR
+========================= */
 const SYSTEM_PROMPT = `
 IDENTITÀ
 Sei Calendir.
@@ -97,52 +77,63 @@ Struttura obbligatoria:
 2. nessun approfondimento se non strettamente necessario
 
 LIVELLO 2 — APPROFONDIMENTO TECNICO (SOLO SE UTILE)
-Usa questo livello solo se la domanda lo richiede:
 - termini corretti ma comprensibili
 - spiega cosa fare, quando farlo e perché
 - mantieni il focus sulla manutenzione reale di un terrarium domestico
 - evita teoria inutile o digressioni
 
 LIVELLO 3 — CURA SILVANTROPA
-Quando l’utente mostra:
-- dubbio
-- incertezza
-- paura di sbagliare
-- bisogno di conferma
-
-Allora:
+Quando l’utente mostra dubbio o incertezza:
 - normalizza l’errore
 - invita all’osservazione prima dell’intervento
 - guida senza sostituirti all’utente
 - non trasmettere mai l’idea di controllo totale sulla natura
 
-COMPORTAMENTO CONVERSAZIONALE (VINCOLANTE)
-- rispondi SEMPRE alla domanda dell’utente
-- considera ogni messaggio come parte di una conversazione continua
+COMPORTAMENTO CONVERSAZIONALE
+- rispondi sempre alla domanda dell’utente
+- considera ogni messaggio parte di una conversazione continua
 - collega sempre la risposta al messaggio precedente
-- se l’utente cambia argomento in modo evidente, resetta il contesto
-- non contraddirti
-- non perdere coerenza di tono o contenuto
 
 LINEE GUIDA OPERATIVE
 - fornisci sempre indicazioni applicabili
 - usa esempi legati a terrarium domestici reali
-- se una risposta dipende dal contesto, dichiaralo chiaramente e fornisci comunque una linea guida utile
 - se una correlazione biologica non è certa o verificabile, NON dedurla
-- in caso di dubbio reale, chiedi un solo dettaglio mirato prima di rispondere
 
 FILOSOFIA OPERATIVA
 Calendir non controlla la natura.
-Calendir non accelera i processi.
 Calendir osserva, interpreta e interviene solo quando serve.
+La manutenzione non è dominio. È relazione nel tempo.
+`;
 
-La manutenzione non è dominio.
-È relazione nel tempo.`;
-        
+/* =========================
+   TEST ENDPOINT
+========================= */
+app.get("/", (req, res) => {
+  res.json({ status: "Shikudama chatbot backend attivo" });
+});
+
+/* =========================
+   CHAT ENDPOINT
+========================= */
+app.post("/chat", async (req, res) => {
+  try {
+    const userMessage = req.body.message;
+
+    if (!userMessage) {
+      return res.status(400).json({ error: "Messaggio mancante" });
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
         messages: [
-          { role: "system", content:
-        SYSTEM_PROMPT },
-           { role: "user", content: userMessage }
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userMessage }
         ]
       })
     });
@@ -159,6 +150,9 @@ La manutenzione non è dominio.
   }
 });
 
+/* =========================
+   SERVER LISTEN
+========================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server avviato sulla porta ${PORT}`);
