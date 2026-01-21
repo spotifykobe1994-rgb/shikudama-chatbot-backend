@@ -3,76 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <title>Calendir</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
-      font-family: system-ui, sans-serif;
-      background: #0f1f1a;
-      color: #eaeaea;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: transparent;
     }
-    #chat {
+
+    #chatbox {
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      background: #0f1a14;
+      color: #e6f2ea;
+      border-radius: 14px;
+      overflow: hidden;
     }
+
     #messages {
       flex: 1;
-      padding: 14px;
+      padding: 12px;
       overflow-y: auto;
+      font-size: 14px;
     }
+
+    .msg {
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .bot {
+      color: #b6e3c6;
+    }
+
+    .user {
+      color: #ffffff;
+      text-align: right;
+    }
+
     #input {
       display: flex;
-      border-top: 1px solid #2a3a34;
+      border-top: 1px solid #1f3b2c;
     }
+
     input {
       flex: 1;
-      padding: 12px;
+      padding: 10px;
       border: none;
       outline: none;
-      background: #12231d;
-      color: #eaeaea;
+      background: #102018;
+      color: #fff;
     }
+
     button {
-      padding: 12px 16px;
-      background: #2e7d32;
-      color: white;
+      padding: 10px 14px;
+      background: #1f7a4a;
       border: none;
+      color: white;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="chat">
-    <div id="messages"></div>
+  <div id="chatbox">
+    <div id="messages">
+      <div class="msg bot">
+        🌿 <strong>Calendir</strong><br>
+        Sono qui per aiutarti a prenderti cura del tuo terrarium.
+      </div>
+    </div>
     <div id="input">
-      <input id="text" placeholder="Scrivi a Calendir…" />
+      <input id="text" placeholder="Scrivi qui..." />
       <button onclick="send()">Invia</button>
     </div>
   </div>
 
   <script>
+    const messages = document.getElementById("messages");
+    const input = document.getElementById("text");
+
     async function send() {
-      const input = document.getElementById("text");
-      const msg = input.value.trim();
-      if (!msg) return;
+      const text = input.value.trim();
+      if (!text) return;
 
-      const messages = document.getElementById("messages");
-      messages.innerHTML += "<p><b>Tu:</b> " + msg + "</p>";
+      messages.innerHTML += `<div class="msg user">${text}</div>`;
       input.value = "";
+      messages.scrollTop = messages.scrollHeight;
 
-      const res = await fetch(
-        "https://shikudama-chatbot-backend.onrender.com/chat",
-        {
+      try {
+        const res = await fetch("/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: msg })
-        }
-      );
+          body: JSON.stringify({ message: text })
+        });
 
-      const data = await res.json();
-      messages.innerHTML += "<p><b>Calendir:</b> " + data.reply + "</p>";
-      messages.scrollTop = messages.scrollHeight;
+        const data = await res.json();
+
+        messages.innerHTML += `<div class="msg bot">${data.reply}</div>`;
+        messages.scrollTop = messages.scrollHeight;
+
+      } catch (err) {
+        messages.innerHTML += `<div class="msg bot">❌ Errore di connessione</div>`;
+      }
     }
   </script>
 </body>
