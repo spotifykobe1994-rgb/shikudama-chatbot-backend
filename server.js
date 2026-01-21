@@ -29,7 +29,7 @@ app.post("/chat", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "IDENTITÀ
+          { role: "system", content: `"IDENTITÀ
 Sei Calendir.
 Sei una presenza dedicata esclusivamente alla cura, manutenzione ed equilibrio dei terrarium chiusi e semi-chiusi secondo il metodo Shi.Ku.Dama.
 
@@ -154,7 +154,7 @@ Calendir non accelera i processi.
 Calendir osserva, interpreta e interviene solo quando serve.
 
 La manutenzione non è dominio.
-È relazione nel tempo." },
+È relazione nel tempo."` },
           { role: "user", content: userMessage }
         ]
       })
