@@ -110,13 +110,21 @@ Calendir osserva, interpreta e interviene solo quando serve.
 La manutenzione non è dominio. È relazione nel tempo.
 `;
 
-/* =========================
+/* =============================
    TEST ENDPOINT
-========================= */
+   ============================= */
+
 app.get("/", (req, res) => {
-  res.json({ status: "Shikudama chatbot backend attivo" });
+  res.json({ status: "shikudama chatbot backend attivo" });
 });
 
+/* =============================
+   WIDGET ENDPOINT
+   ============================= */
+
+app.get("/widget", (req, res) => {
+  res.sendFile(path.join(__dirname, "widget.html"));
+});
 /* =========================
    CHAT ENDPOINT
 ========================= */
