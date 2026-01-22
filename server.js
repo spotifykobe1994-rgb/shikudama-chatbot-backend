@@ -8,6 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const conversations = {};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -129,44 +131,54 @@ app.get("/widget", (req, res) => {
    CHAT ENDPOINT
 ========================= */
 app.post("/chat", async (req, res) => {
+  const { message, sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: "sessionId mancante" });
+  }
+
+  // Se è la prima volta che vediamo questa sessione, la inizializziamo
+  if (!conversations[sessionId]) {
+    conversations[sessionId] = [
+      {
+        role: "system",
+        content: SYSTEM_PROMPT
+      }
+    ];
+  }
+
+  // Aggiungiamo il messaggio dell’utente alla memoria
+  conversations[sessionId].push({
+    role: "user",
+    content: message
+  });
+
   try {
-    const userMessage = req.body.message;
-
-    if (!userMessage) {
-      return res.status(400).json({ error: "Messaggio mancante" });
-    }
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMessage }
-        ]
+        model: "gpt-4.1-mini",
+        messages: conversations[sessionId]
       })
     });
 
     const data = await response.json();
+    const reply = data.choices[0].message.content;
 
-    res.json({
-      reply: data.choices?.[0]?.message?.content || "Nessuna risposta"
+    // Salviamo anche la risposta di Calendir
+    conversations[sessionId].push({
+      role: "assistant",
+      content: reply
     });
 
-  } catch (error) {
-    console.error("Errore chat:", error);
-    res.status(500).json({ error: "Errore interno server" });
-  }
-});
+    res.json({ reply });
 
-/* =========================
-   SERVER LISTEN
-========================= */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server avviato sulla porta ${PORT}`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Errore nel server" });
+  }
 });
