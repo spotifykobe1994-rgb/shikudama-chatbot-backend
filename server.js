@@ -1,85 +1,92 @@
 import express from "express";
 import cors from "cors";
-import path from "path";
 import fs from "fs";
+import path from "path";
 import { fileURLToPath } from "url";
 
+// ===============================
+// SETUP BASE
+// ===============================
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-const conversations = {};
-
+// Serve per usare __dirname con ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* =========================
-   SYSTEM PROMPT – CALENDIR
-========================= */
-const SYSTEM_PROMPT = fs.readFileSync(
-  path.join(__dirname, "system_prompt.txt"),
-  "utf-8"
-);
+// ===============================
+// MEMORIA CONVERSAZIONALE (RAM)
+// ===============================
+const conversations = {};
 
-/* =============================
-   TEST ENDPOINT
-   ============================= */
-
+// ===============================
+// ENDPOINT ROOT (facoltativo ma utile)
+// ===============================
 app.get("/", (req, res) => {
-  res.json({ status: "shikudama chatbot backend attivo" });
+  res.json({ status: "Calendir backend attivo" });
 });
 
-/* =============================
-   WIDGET ENDPOINT
-   ============================= */
-
-app.get("/widget", (req, res) => {
-  res.sendFile(path.join(__dirname, "widget.html"));
-});
-/* =========================
-   CHAT ENDPOINT
-========================= */
+// ===============================
+// ENDPOINT CHAT
+// ===============================
 app.post("/chat", async (req, res) => {
-  const { message, sessionId } = req.body;
-
-  if (!sessionId) {
-    return res.status(400).json({ error: "sessionId mancante" });
-  }
-
-  // Se è la prima volta che vediamo questa sessione, la inizializziamo
-  if (!conversations[sessionId]) {
-    conversations[sessionId] = [
-      {
-        role: "system",
-        content: SYSTEM_PROMPT
-      }
-    ];
-  }
-
-  // Aggiungiamo il messaggio dell’utente alla memoria
-  conversations[sessionId].push({
-    role: "user",
-    content: message
-  });
-
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        messages: conversations[sessionId]
-      })
+    const { message, userId } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Messaggio mancante" });
+    }
+
+    // Fallback sicuro per Wix
+    const sessionId = userId || "wix-default";
+
+    // Inizializza la conversazione se non esiste
+    if (!conversations[sessionId]) {
+      const systemPrompt = fs.readFileSync(
+        path.join(__dirname, "system_prompt.txt"),
+        "utf-8"
+      );
+
+      conversations[sessionId] = [
+        { role: "system", content: systemPrompt }
+      ];
+    }
+
+    // Aggiunge messaggio utente alla memoria
+    conversations[sessionId].push({
+      role: "user",
+      content: message
     });
 
-    const data = await response.json();
-    const reply = data.choices[0].message.content;
+    // ===============================
+    // CHIAMATA OPENAI
+    // ===============================
+    const response = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          temperature: 0.4,
+          messages: conversations[sessionId]
+        })
+      }
+    );
 
-    // Salviamo anche la risposta di Calendir
+    const data = await response.json();
+
+    const reply =
+      data.choices?.[0]?.message?.content ||
+      "Non ho una risposta utile in questo momento.";
+
+    // Salva risposta nella memoria
     conversations[sessionId].push({
       role: "assistant",
       content: reply
@@ -88,7 +95,14 @@ app.post("/chat", async (req, res) => {
     res.json({ reply });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Errore nel server" });
+    console.error("Errore Calendir:", error);
+    res.status(500).json({ error: "Errore interno del server" });
   }
+});
+
+// ===============================
+// AVVIO SERVER
+// ===============================
+app.listen(PORT, () => {
+  console.log(`Calendir attivo sulla porta ${PORT}`);
 });
