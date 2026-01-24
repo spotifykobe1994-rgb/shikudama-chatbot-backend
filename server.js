@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// Serve per usare __dirname con ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -29,10 +28,8 @@ const MANUTENZIONE_DIR = path.join(__dirname, "manutenzione");
 
 function loadManutenzioneFile(filename) {
   try {
-    const filePath = path.join(MANUTENZIONE_DIR, filename);
-    return fs.readFileSync(filePath, "utf-8");
-  } catch (err) {
-    console.error("Errore lettura file manutenzione:", filename);
+    return fs.readFileSync(path.join(MANUTENZIONE_DIR, filename), "utf-8");
+  } catch {
     return null;
   }
 }
@@ -48,76 +45,79 @@ function detectManutenzioneTopic(message) {
   if (text.includes("potatura") || text.includes("potare")) return "potatura.md";
   if (text.includes("microfauna") || text.includes("insetti")) return "microfauna.md";
   if (text.includes("temperatura") || text.includes("caldo") || text.includes("freddo")) return "temperatura.md";
-  if (
-    text.includes("problemi") ||
-    text.includes("muffa") ||
-    text.includes("odore") ||
-    text.includes("marcio")
-  ) return "problemi_comuni.md";
+  if (text.includes("problemi") || text.includes("muffa") || text.includes("odore") || text.includes("marcio"))
+    return "problemi_comuni.md";
 
   return null;
 }
 
 // ===============================
-// WIDGET CALENDIR (HTML)
+// WIDGET CALENDIR
 // ===============================
 app.get("/widget", (req, res) => {
   res.sendFile(path.join(__dirname, "widget.html"));
 });
 
-// ===============================
-// ENDPOINT ROOT
-// ===============================
 app.get("/", (req, res) => {
   res.json({ status: "Calendir backend attivo" });
 });
 
 // ===============================
-// ENDPOINT CHAT
+// CHAT
 // ===============================
 app.post("/chat", async (req, res) => {
   try {
-    const { message, userId } = req.body;
+    const { message, userId, imageBase64 } = req.body; // 🔹 FIX IMMAGINI
 
-    if (!message) {
+    if (!message && !imageBase64) {
       return res.status(400).json({ error: "Messaggio mancante" });
     }
 
-    // Fallback sicuro per Wix
     const sessionId = userId || "wix-default";
 
-    // Inizializza la conversazione se non esiste
     if (!conversations[sessionId]) {
       const systemPrompt = fs.readFileSync(
         path.join(__dirname, "prompts", "system_prompt.txt"),
         "utf-8"
       );
 
-      conversations[sessionId] = [
-        { role: "system", content: systemPrompt }
-      ];
+      conversations[sessionId] = [{ role: "system", content: systemPrompt }];
     }
 
     // ===============================
-    // MESSAGGIO UTENTE
+    // 🔹 FIX IMMAGINI — MESSAGGIO UTENTE
     // ===============================
-    conversations[sessionId].push({
-      role: "user",
-      content: message
-    });
+    if (imageBase64) {
+      conversations[sessionId].push({
+        role: "user",
+        content: [
+          { type: "text", text: message || "Ho inviato un'immagine" },
+          {
+            type: "image_url",
+            image_url: { url: imageBase64 }
+          }
+        ]
+      });
+    } else {
+      conversations[sessionId].push({
+        role: "user",
+        content: message
+      });
+    }
 
     // ===============================
-    // CONTESTO MANUTENZIONE DINAMICO
+    // CONTESTO MANUTENZIONE
     // ===============================
-    const manutenzioneFile = detectManutenzioneTopic(message);
+    if (message) {
+      const manutenzioneFile = detectManutenzioneTopic(message);
 
-    if (manutenzioneFile) {
-      const manutenzioneContent = loadManutenzioneFile(manutenzioneFile);
+      if (manutenzioneFile) {
+        const manutenzioneContent = loadManutenzioneFile(manutenzioneFile);
 
-      if (manutenzioneContent) {
-        conversations[sessionId].push({
-          role: "system",
-          content: `
+        if (manutenzioneContent) {
+          conversations[sessionId].push({
+            role: "system",
+            content: `
 Contesto tecnico di manutenzione Shi.Ku.Dama.
 Usa queste informazioni SOLO se pertinenti alla domanda.
 Non riportare il testo integralmente.
@@ -125,36 +125,32 @@ Mantieni il tono di Calendir.
 
 ${manutenzioneContent}
 `
-        });
+          });
+        }
       }
     }
 
     // ===============================
     // CHIAMATA OPENAI
     // ===============================
-    const response = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0.4,
-          messages: conversations[sessionId]
-        })
-      }
-    );
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        messages: conversations[sessionId]
+      })
+    });
 
     const data = await response.json();
-
     const reply =
       data.choices?.[0]?.message?.content ||
       "Non ho una risposta utile in questo momento.";
 
-    // Salva risposta nella memoria
     conversations[sessionId].push({
       role: "assistant",
       content: reply
@@ -168,8 +164,6 @@ ${manutenzioneContent}
   }
 });
 
-// ===============================
-// AVVIO SERVER
 // ===============================
 app.listen(PORT, () => {
   console.log(`Calendir attivo sulla porta ${PORT}`);
