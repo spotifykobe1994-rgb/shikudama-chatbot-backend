@@ -53,7 +53,7 @@ app.post("/chat", async (req, res) => {
     // Inizializza la conversazione se non esiste
     if (!conversations[sessionId]) {
       const systemPrompt = fs.readFileSync(
-        path.join(__dirname, "system_prompt.txt"),
+        path.join(__dirname, "prompts", "system_prompt.txt"),
         "utf-8"
       );
 
