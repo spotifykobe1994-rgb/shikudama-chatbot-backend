@@ -23,6 +23,42 @@ const __dirname = path.dirname(__filename);
 const conversations = {};
 
 // ===============================
+// MANUTENZIONE (FILE DINAMICI)
+// ===============================
+const MANUTENZIONE_DIR = path.join(__dirname, "manutenzione");
+
+function loadManutenzioneFile(filename) {
+  try {
+    const filePath = path.join(MANUTENZIONE_DIR, filename);
+    return fs.readFileSync(filePath, "utf-8");
+  } catch (err) {
+    console.error("Errore lettura file manutenzione:", filename);
+    return null;
+  }
+}
+
+function detectManutenzioneTopic(message) {
+  const text = message.toLowerCase();
+
+  if (text.includes("acqua") || text.includes("innaffi")) return "acqua.md";
+  if (text.includes("luce") || text.includes("illumin")) return "luce.md";
+  if (text.includes("condensa")) return "condensa.md";
+  if (text.includes("aprire") || text.includes("apertura")) return "apertura.md";
+  if (text.includes("pulizia") || text.includes("pulire")) return "pulizia.md";
+  if (text.includes("potatura") || text.includes("potare")) return "potatura.md";
+  if (text.includes("microfauna") || text.includes("insetti")) return "microfauna.md";
+  if (text.includes("temperatura") || text.includes("caldo") || text.includes("freddo")) return "temperatura.md";
+  if (
+    text.includes("problemi") ||
+    text.includes("muffa") ||
+    text.includes("odore") ||
+    text.includes("marcio")
+  ) return "problemi_comuni.md";
+
+  return null;
+}
+
+// ===============================
 // WIDGET CALENDIR (HTML)
 // ===============================
 app.get("/widget", (req, res) => {
@@ -62,11 +98,36 @@ app.post("/chat", async (req, res) => {
       ];
     }
 
-    // Aggiunge messaggio utente alla memoria
+    // ===============================
+    // MESSAGGIO UTENTE
+    // ===============================
     conversations[sessionId].push({
       role: "user",
       content: message
     });
+
+    // ===============================
+    // CONTESTO MANUTENZIONE DINAMICO
+    // ===============================
+    const manutenzioneFile = detectManutenzioneTopic(message);
+
+    if (manutenzioneFile) {
+      const manutenzioneContent = loadManutenzioneFile(manutenzioneFile);
+
+      if (manutenzioneContent) {
+        conversations[sessionId].push({
+          role: "system",
+          content: `
+Contesto tecnico di manutenzione Shi.Ku.Dama.
+Usa queste informazioni SOLO se pertinenti alla domanda.
+Non riportare il testo integralmente.
+Mantieni il tono di Calendir.
+
+${manutenzioneContent}
+`
+        });
+      }
+    }
 
     // ===============================
     // CHIAMATA OPENAI
