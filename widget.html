@@ -64,13 +64,18 @@
     /* INPUT */
     #input {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       padding: 10px;
       background: #F9F1E3;
       border-top: 1px solid rgba(0,0,0,0.08);
     }
 
-    #input input {
+    .input-row {
+      display: flex;
+      align-items: center;
+    }
+
+    #input input[type="text"] {
       flex: 1;
       padding: 10px 12px;
       border: none;
@@ -87,18 +92,45 @@
 
     #input button {
       margin-left: 8px;
-      padding: 10px 16px;
+      padding: 10px 14px;
       border: none;
       border-radius: 10px;
       background: #4A3B1B;
       color: #F9F1E3;
       font-size: 14px;
       cursor: pointer;
-      transition: background 0.2s ease;
     }
 
     #input button:hover {
       background: #3a2e15;
+    }
+
+    /* PREVIEW IMMAGINE */
+    #image-preview-container {
+      display: none;
+      position: relative;
+      margin-bottom: 8px;
+      max-width: 180px;
+    }
+
+    #image-preview {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    #remove-image {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      font-size: 14px;
     }
 
     /* SCROLLBAR */
@@ -127,8 +159,19 @@
     </div>
 
     <div id="input">
-      <input id="text" placeholder="Scrivi qui..." />
-      <button onclick="send()">Invia</button>
+
+      <!-- PREVIEW IMMAGINE -->
+      <div id="image-preview-container">
+        <img id="image-preview" />
+        <button id="remove-image">✕</button>
+      </div>
+
+      <div class="input-row">
+        <input type="file" id="imageInput" accept="image/*" hidden />
+        <button id="imageBtn">📷</button>
+        <input id="text" type="text" placeholder="Scrivi qui..." />
+        <button onclick="send()">Invia</button>
+      </div>
     </div>
   </div>
 
@@ -136,47 +179,75 @@
     const messages = document.getElementById("messages");
     const input = document.getElementById("text");
 
-    // ===============================
-    // SESSIONE PERSISTENTE
-    // ===============================
-    let sessionId = localStorage.getItem("calendirSessionId");
+    const imageInput = document.getElementById("imageInput");
+    const imageBtn = document.getElementById("imageBtn");
+    const previewContainer = document.getElementById("image-preview-container");
+    const previewImage = document.getElementById("image-preview");
+    const removeImageBtn = document.getElementById("remove-image");
 
+    let selectedImage = null;
+
+    // SESSIONE
+    let sessionId = localStorage.getItem("calendirSessionId");
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       localStorage.setItem("calendirSessionId", sessionId);
     }
 
-    // ===============================
-    // INVIO MESSAGGIO
-    // ===============================
+    imageBtn.onclick = () => imageInput.click();
+
+    imageInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        selectedImage = reader.result;
+        previewImage.src = selectedImage;
+        previewContainer.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    };
+
+    removeImageBtn.onclick = () => {
+      selectedImage = null;
+      previewImage.src = "";
+      previewContainer.style.display = "none";
+      imageInput.value = "";
+    };
+
     async function send() {
       const text = input.value.trim();
-      if (!text) return;
+      if (!text && !selectedImage) return;
 
-      messages.innerHTML += `<div class="msg user">${text}</div>`;
+      messages.innerHTML += `<div class="msg user">${text || "📷 Immagine inviata"}</div>`;
       input.value = "";
       messages.scrollTop = messages.scrollHeight;
 
       try {
         const res = await fetch("/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: text,
-            userId: sessionId
+            userId: sessionId,
+            imageBase64: selectedImage
           })
         });
 
         const data = await res.json();
-
         messages.innerHTML += `<div class="msg bot">${data.reply}</div>`;
         messages.scrollTop = messages.scrollHeight;
 
-      } catch (err) {
+      } catch {
         messages.innerHTML += `<div class="msg bot">❌ Errore di connessione</div>`;
       }
+
+      // RESET IMMAGINE
+      selectedImage = null;
+      previewImage.src = "";
+      previewContainer.style.display = "none";
+      imageInput.value = "";
     }
   </script>
 </body>
