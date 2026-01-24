@@ -4,6 +4,9 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// 👁️ OCCHIO — IMPORT
+import { analyzeTerrariumImage } from "./vision.js";
+
 // ===============================
 // SETUP BASE
 // ===============================
@@ -45,7 +48,12 @@ function detectManutenzioneTopic(message) {
   if (text.includes("potatura") || text.includes("potare")) return "potatura.md";
   if (text.includes("microfauna") || text.includes("insetti")) return "microfauna.md";
   if (text.includes("temperatura") || text.includes("caldo") || text.includes("freddo")) return "temperatura.md";
-  if (text.includes("problemi") || text.includes("muffa") || text.includes("odore") || text.includes("marcio"))
+  if (
+    text.includes("problemi") ||
+    text.includes("muffa") ||
+    text.includes("odore") ||
+    text.includes("marcio")
+  )
     return "problemi_comuni.md";
 
   return null;
@@ -67,7 +75,7 @@ app.get("/", (req, res) => {
 // ===============================
 app.post("/chat", async (req, res) => {
   try {
-    const { message, userId, imageBase64 } = req.body; // 🔹 FIX IMMAGINI
+    const { message, userId, imageBase64 } = req.body;
 
     if (!message && !imageBase64) {
       return res.status(400).json({ error: "Messaggio mancante" });
@@ -85,18 +93,21 @@ app.post("/chat", async (req, res) => {
     }
 
     // ===============================
-    // 🔹 FIX IMMAGINI — MESSAGGIO UTENTE
+    // 👁️ OCCHIO — ANALISI IMMAGINE (AGGIUNTA)
+    // ===============================
+    let visualObservation = null;
+
+    if (imageBase64) {
+      visualObservation = await analyzeTerrariumImage(imageBase64);
+    }
+
+    // ===============================
+    // MESSAGGIO UTENTE (INVARIATO)
     // ===============================
     if (imageBase64) {
       conversations[sessionId].push({
         role: "user",
-        content: [
-          { type: "text", text: message || "Ho inviato un'immagine" },
-          {
-            type: "image_url",
-            image_url: { url: imageBase64 }
-          }
-        ]
+        content: message || "Ho inviato un'immagine"
       });
     } else {
       conversations[sessionId].push({
@@ -106,7 +117,23 @@ app.post("/chat", async (req, res) => {
     }
 
     // ===============================
-    // CONTESTO MANUTENZIONE
+    // 👁️ OCCHIO — PASSAGGIO A CALENDIR (AGGIUNTA)
+    // ===============================
+    if (visualObservation) {
+      conversations[sessionId].push({
+        role: "system",
+        content: `
+OSSERVAZIONE VISIVA AFFIDABILE (DERIVATA DA ANALISI DELL'IMMAGINE):
+
+${visualObservation}
+
+Usa queste osservazioni come base per l’accompagnamento secondo Shi.Ku.Dama.
+`
+      });
+    }
+
+    // ===============================
+    // CONTESTO MANUTENZIONE (INVARIATO)
     // ===============================
     if (message) {
       const manutenzioneFile = detectManutenzioneTopic(message);
@@ -131,7 +158,7 @@ ${manutenzioneContent}
     }
 
     // ===============================
-    // CHIAMATA OPENAI
+    // CHIAMATA OPENAI (CALENDIR)
     // ===============================
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
