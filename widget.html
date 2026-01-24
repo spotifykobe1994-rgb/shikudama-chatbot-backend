@@ -3,122 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <title>Calendir</title>
+
   <style>
-/* RESET BASE */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+    /* RESET BASE */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-/* CONTENITORE CHAT */
-#chatbox {
-  width: 100%;
-  height: 420px; /* altezza controllata per Wix */
-  display: flex;
-  flex-direction: column;
-  background: #F9F1E3;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-}
+    /* CONTENITORE CHAT */
+    #chatbox {
+      width: 100%;
+      height: 420px;
+      display: flex;
+      flex-direction: column;
+      background: #F9F1E3;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
 
-/* AREA MESSAGGI */
-#messages {
-  flex: 1;
-  padding: 14px;
-  overflow-y: auto;
-  font-size: 14px;
-  line-height: 1.5;
-}
+    /* AREA MESSAGGI */
+    #messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.5;
+    }
 
-/* MESSAGGI BASE */
-.msg {
-  max-width: 85%;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  word-wrap: break-word;
-}
+    /* MESSAGGI BASE */
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      word-wrap: break-word;
+    }
 
-/* MESSAGGI BOT – CALENDIR */
-.msg.bot {
-  background: #F3E9D7;
-  color: #4A3B1B;
-  align-self: flex-start;
-  border-top-left-radius: 4px;
-}
+    /* BOT */
+    .msg.bot {
+      background: #F3E9D7;
+      color: #4A3B1B;
+      align-self: flex-start;
+      border-top-left-radius: 4px;
+    }
 
-/* MESSAGGI UTENTE */
-.msg.user {
-  background: #4A3B1B;
-  color: #F9F1E3;
-  align-self: flex-end;
-  border-top-right-radius: 4px;
-}
+    /* UTENTE */
+    .msg.user {
+      background: #4A3B1B;
+      color: #F9F1E3;
+      align-self: flex-end;
+      border-top-right-radius: 4px;
+    }
 
-/* AREA INPUT */
-#input {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  background: #F9F1E3;
-  border-top: 1px solid rgba(0,0,0,0.08);
-}
+    /* INPUT */
+    #input {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #F9F1E3;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
 
-/* CAMPO TESTO */
-#input input {
-  flex: 1;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 10px;
-  background: #F3E9D7;
-  color: #4A3B1B;
-  font-size: 14px;
-  outline: none;
-}
+    #input input {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 10px;
+      background: #F3E9D7;
+      color: #4A3B1B;
+      font-size: 14px;
+      outline: none;
+    }
 
-/* PLACEHOLDER */
-#input input::placeholder {
-  color: rgba(74,59,27,0.6);
-}
+    #input input::placeholder {
+      color: rgba(74,59,27,0.6);
+    }
 
-/* BOTTONE INVIA */
-#input button {
-  margin-left: 8px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  background: #4A3B1B;
-  color: #F9F1E3;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
+    #input button {
+      margin-left: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #4A3B1B;
+      color: #F9F1E3;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
 
-/* HOVER BOTTONE */
-#input button:hover {
-  background: #3a2e15;
-}
+    #input button:hover {
+      background: #3a2e15;
+    }
 
-/* SCROLLBAR DISCRETA */
-#messages::-webkit-scrollbar {
-  width: 6px;
-}
+    /* SCROLLBAR */
+    #messages::-webkit-scrollbar {
+      width: 6px;
+    }
 
-#messages::-webkit-scrollbar-thumb {
-  background: rgba(74,59,27,0.3);
-  border-radius: 6px;
-}
+    #messages::-webkit-scrollbar-thumb {
+      background: rgba(74,59,27,0.3);
+      border-radius: 6px;
+    }
 
-#messages::-webkit-scrollbar-track {
-  background: transparent;
-}
-</style>
+    #messages::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
 </head>
+
 <body>
   <div id="chatbox">
     <div id="messages">
@@ -127,6 +125,7 @@ html, body {
         Sono qui per aiutarti a prenderti cura del tuo terrarium.
       </div>
     </div>
+
     <div id="input">
       <input id="text" placeholder="Scrivi qui..." />
       <button onclick="send()">Invia</button>
@@ -137,6 +136,19 @@ html, body {
     const messages = document.getElementById("messages");
     const input = document.getElementById("text");
 
+    // ===============================
+    // SESSIONE PERSISTENTE
+    // ===============================
+    let sessionId = localStorage.getItem("calendirSessionId");
+
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("calendirSessionId", sessionId);
+    }
+
+    // ===============================
+    // INVIO MESSAGGIO
+    // ===============================
     async function send() {
       const text = input.value.trim();
       if (!text) return;
@@ -148,8 +160,13 @@ html, body {
       try {
         const res = await fetch("/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: text,
+            userId: sessionId
+          })
         });
 
         const data = await res.json();
