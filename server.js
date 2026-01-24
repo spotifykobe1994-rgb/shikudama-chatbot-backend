@@ -23,7 +23,14 @@ const __dirname = path.dirname(__filename);
 const conversations = {};
 
 // ===============================
-// ENDPOINT ROOT (facoltativo ma utile)
+// WIDGET CALENDIR (HTML)
+// ===============================
+app.get("/widget", (req, res) => {
+  res.sendFile(path.join(__dirname, "widget.html"));
+});
+
+// ===============================
+// ENDPOINT ROOT
 // ===============================
 app.get("/", (req, res) => {
   res.json({ status: "Calendir backend attivo" });
