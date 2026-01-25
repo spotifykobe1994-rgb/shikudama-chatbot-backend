@@ -186,6 +186,7 @@
     const removeImageBtn = document.getElementById("remove-image");
 
     let selectedImage = null;
+    let imageReady = false; // 🔹 FIX
 
     // SESSIONE
     let sessionId = localStorage.getItem("calendirSessionId");
@@ -200,9 +201,12 @@
       const file = e.target.files[0];
       if (!file) return;
 
+      imageReady = false; // 🔹 FIX
+
       const reader = new FileReader();
       reader.onload = () => {
         selectedImage = reader.result;
+        imageReady = true; // 🔹 FIX
         previewImage.src = selectedImage;
         previewContainer.style.display = "block";
       };
@@ -211,6 +215,7 @@
 
     removeImageBtn.onclick = () => {
       selectedImage = null;
+      imageReady = false; // 🔹 FIX
       previewImage.src = "";
       previewContainer.style.display = "none";
       imageInput.value = "";
@@ -218,6 +223,12 @@
 
     async function send() {
       const text = input.value.trim();
+
+      if (selectedImage && !imageReady) {
+        alert("Attendi un attimo: l'immagine è ancora in caricamento.");
+        return;
+      }
+
       if (!text && !selectedImage) return;
 
       messages.innerHTML += `<div class="msg user">${text || "📷 Immagine inviata"}</div>`;
@@ -229,9 +240,9 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: text,
+            message: text || null,
             userId: sessionId,
-            imageBase64: selectedImage
+            imageBase64: selectedImage || null
           })
         });
 
@@ -245,6 +256,7 @@
 
       // RESET IMMAGINE
       selectedImage = null;
+      imageReady = false;
       previewImage.src = "";
       previewContainer.style.display = "none";
       imageInput.value = "";
